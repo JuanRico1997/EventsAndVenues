@@ -2,8 +2,8 @@ package com.riwi.h1.application.service;
 
 
 import com.riwi.h1.domain.entity.Event;
-import com.riwi.h1.domain.repository.EventRepository;
-import com.riwi.h1.domain.repository.VenueRepository;
+import com.riwi.h1.domain.repository.jpa.EventJpaRepository;
+import com.riwi.h1.domain.repository.jpa.VenueJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +11,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Servicio para la gestión de Eventos.
+ *
+ * MIGRADO A JPA:
+ * - Ahora usa EventJpaRepository (JPA) en lugar de EventRepositoryImpl (in-memory)
+ * - Utiliza VenueJpaRepository (JPA) en lugar de VenueRepositoryImpl (in-memory)
+ * - Los datos se persisten en la base de datos H2
+ * - Mantiene toda la lógica de validación de negocio
+ */
 @Service
 @RequiredArgsConstructor
 public class EventService {
 
-    private final EventRepository eventRepository;
-    private final VenueRepository venueRepository;
+    // CAMBIO: Ahora inyectamos los repositorios JPA
+    private final EventJpaRepository eventJpaRepository;
+    private final VenueJpaRepository venueJpaRepository;
 
     public Event create(Event event) {
 
@@ -43,20 +53,21 @@ public class EventService {
             throw new IllegalArgumentException("Ticket price cannot be negative");
         }
 
-        return eventRepository.save(event);
+        // CAMBIO: Usa save() de JPA - funciona igual para crear y actualizar
+        return eventJpaRepository.save(event);
     }
 
     public List<Event> findAll() {
-        return eventRepository.findAll();
+        return eventJpaRepository.findAll();
     }
 
     public Optional<Event> findById(Long id) {
-        return eventRepository.findById(id);
+        return eventJpaRepository.findById(id);
     }
 
     public Event update(Long id, Event eventData) {
         // Verificar que el evento existe
-        Event existingEvent = eventRepository.findById(id)
+        Event existingEvent = eventJpaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Event with ID " + id + " not found"));
 
         // Validar nombre si se proporciona
@@ -105,35 +116,38 @@ public class EventService {
             existingEvent.setActive(eventData.getActive());
         }
 
-        return eventRepository.update(existingEvent);
+        // CAMBIO: En JPA, save() sirve tanto para crear como actualizar
+        // Si la entidad tiene ID, hace UPDATE; si no, hace INSERT
+        return eventJpaRepository.save(existingEvent);
     }
 
     public boolean deleteById(Long id) {
-        if (!eventRepository.existsById(id)) {
+        if (!eventJpaRepository.existsById(id)) {
             throw new IllegalArgumentException("Event with ID " + id + " not found");
         }
-        return eventRepository.deleteById(id);
+        // CAMBIO: JPA usa deleteById() que no retorna boolean, pero funciona igual
+        eventJpaRepository.deleteById(id);
+        return true; // Si no lanza excepción, se eliminó correctamente
     }
 
     public List<Event> findByVenueId(Long venueId) {
         // Validar que el venue existe
         validateVenueExists(venueId);
-        return eventRepository.findByVenueId(venueId);
+        return eventJpaRepository.findByVenueId(venueId);
     }
 
 
     public List<Event> findActiveEvents() {
-        return eventRepository.findAll().stream()
-                .filter(Event::getActive)
-                .toList();
+        // MEJORA: Ahora usamos el método de JPA que genera la query automáticamente
+        // En lugar de filtrar en memoria con stream(), la BD hace el filtro
+        return eventJpaRepository.findByActive(true);
     }
 
 
     public List<Event> findUpcomingEvents() {
         LocalDateTime now = LocalDateTime.now();
-        return eventRepository.findAll().stream()
-                .filter(event -> event.getEventDate() != null && event.getEventDate().isAfter(now))
-                .toList();
+        // MEJORA: Usamos el método de JPA para filtrar en la BD
+        return eventJpaRepository.findByEventDateAfter(now);
     }
 
     // ========== MÉTODOS DE VALIDACIÓN PRIVADOS ==========
@@ -147,7 +161,7 @@ public class EventService {
 
 
     private void validateVenueExists(Long venueId) {
-        if (!venueRepository.existsById(venueId)) {
+        if (!venueJpaRepository.existsById(venueId)) {
             throw new IllegalArgumentException("Venue with ID " + venueId + " not found");
         }
     }
