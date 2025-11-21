@@ -33,6 +33,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Maneja excepciones de recursos duplicados (409).
+     * Se activa cuando se intenta crear un recurso que ya existe.
+     *
+     * @param ex La excepción lanzada
+     * @param request La petición HTTP
+     * @return ResponseEntity con el error 409
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateResourceException(
+            DuplicateResourceException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+
+    /**
      * Maneja excepciones de peticiones incorrectas (400).
      *
      * @param ex La excepción lanzada
