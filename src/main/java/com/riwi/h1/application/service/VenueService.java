@@ -4,6 +4,7 @@ import com.riwi.h1.domain.entity.Event;
 import com.riwi.h1.domain.entity.Venue;
 import com.riwi.h1.domain.repository.jpa.EventJpaRepository;
 import com.riwi.h1.domain.repository.jpa.VenueJpaRepository;
+import com.riwi.h1.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,12 @@ public class VenueService {
     public Venue create(Venue venue) {
         // Validación: nombre no puede estar vacío
         validateVenueName(venue.getName());
+
+        // ========== 🆕 NUEVA VALIDACIÓN: Verificar duplicados ==========
+        // Verifica si ya existe otro venue con el mismo nombre (ignora mayúsculas)
+        if (venueJpaRepository.existsByNameIgnoreCase(venue.getName())) {
+            throw new DuplicateResourceException("Venue", "name", venue.getName());
+        }
 
         // Validación: capacidad máxima debe ser positiva
         if (venue.getMaxCapacity() != null && venue.getMaxCapacity() <= 0) {
@@ -69,6 +76,15 @@ public class VenueService {
         // Validar y actualizar nombre
         if (venueData.getName() != null) {
             validateVenueName(venueData.getName());
+
+            // ========== 🆕 NUEVA VALIDACIÓN: Verificar duplicados al actualizar ==========
+            // Solo valida duplicados si el nombre cambió
+            if (!venueData.getName().equalsIgnoreCase(existingVenue.getName())) {
+                if (venueJpaRepository.existsByNameIgnoreCase(venueData.getName())) {
+                    throw new DuplicateResourceException("Venue", "name", venueData.getName());
+                }
+            }
+
             existingVenue.setName(venueData.getName());
         }
 
@@ -160,7 +176,7 @@ public class VenueService {
         if (!venueJpaRepository.existsById(venueId)) {
             throw new IllegalArgumentException("Venue with ID " + venueId + " not found");
         }
-        // MEJORA: Usamos el método count de JPA que es más eficiente
+        // MEJORA: Usamos el metodo count de JPA que es más eficiente
         return eventJpaRepository.countByVenueId(venueId);
     }
 

@@ -4,8 +4,10 @@ package com.riwi.h1.application.service;
 import com.riwi.h1.domain.entity.Event;
 import com.riwi.h1.domain.repository.jpa.EventJpaRepository;
 import com.riwi.h1.domain.repository.jpa.VenueJpaRepository;
+import com.riwi.h1.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +34,12 @@ public class EventService {
 
         //Validacion nombre not null
         validateEventName(event.getName());
+
+        // ========== 🆕 NUEVA VALIDACIÓN: Verificar duplicados ==========
+        // Verifica si ya existe otro evento con el mismo nombre (ignora mayúsculas)
+        if (eventJpaRepository.existsByNameIgnoreCase(event.getName())) {
+            throw new DuplicateResourceException("Event", "name", event.getName());
+        }
 
         // Validación: si tiene venueId, debe existir el venue
         if (event.getVenueId() != null) {
@@ -73,6 +81,15 @@ public class EventService {
         // Validar nombre si se proporciona
         if (eventData.getName() != null) {
             validateEventName(eventData.getName());
+
+            // ========== 🆕 NUEVA VALIDACIÓN: Verificar duplicados al actualizar ==========
+            // Solo valida duplicados si el nombre cambió
+            if (!eventData.getName().equalsIgnoreCase(existingEvent.getName())) {
+                if (eventJpaRepository.existsByNameIgnoreCase(eventData.getName())) {
+                    throw new DuplicateResourceException("Event", "name", eventData.getName());
+                }
+            }
+
             existingEvent.setName(eventData.getName());
         }
 
