@@ -15,10 +15,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -274,6 +280,133 @@ public class EventController {
 
         return ResponseEntity.ok(response);
     }
+
+    // ========== 🆕 NUEVOS ENDPOINTS CON PAGINACIÓN ==========
+
+    @GetMapping("/paginated")
+    @Operation(
+            summary = "Obtener eventos con paginación",
+            description = "Retorna una página de eventos con soporte para paginación y ordenamiento"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de eventos obtenida exitosamente"
+    )
+    public ResponseEntity<Page<EventResponse>> getEventsPaginated(
+            @Parameter(description = "Número de página (inicia en 0)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Tamaño de página", example = "10")
+            @RequestParam(defaultValue = "10") int size,
+
+            @Parameter(description = "Campo por el cual ordenar", example = "name")
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @Parameter(description = "Dirección de ordenamiento (asc o desc)", example = "asc")
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Event> eventPage = eventService.findAllPaginated(pageable);
+        Page<EventResponse> responsePage = eventPage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/paginated/active")
+    @Operation(
+            summary = "Obtener eventos activos con paginación",
+            description = "Retorna una página de eventos activos"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de eventos activos obtenida exitosamente"
+    )
+    public ResponseEntity<Page<EventResponse>> getActiveEventsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Event> eventPage = eventService.findActiveEventsPaginated(pageable);
+        Page<EventResponse> responsePage = eventPage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/paginated/upcoming")
+    @Operation(
+            summary = "Obtener eventos próximos con paginación",
+            description = "Retorna una página de eventos que aún no han ocurrido"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de eventos próximos obtenida exitosamente"
+    )
+    public ResponseEntity<Page<EventResponse>> getUpcomingEventsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "eventDate") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Event> eventPage = eventService.findUpcomingEventsPaginated(pageable);
+        Page<EventResponse> responsePage = eventPage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/search")
+    @Operation(
+            summary = "Buscar eventos con filtros y paginación",
+            description = "Busca eventos aplicando filtros opcionales: venueId, active, startDate"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de eventos filtrados obtenida exitosamente"
+    )
+    public ResponseEntity<Page<EventResponse>> searchEvents(
+            @Parameter(description = "ID del venue (opcional)")
+            @RequestParam(required = false) Long venueId,
+
+            @Parameter(description = "Estado activo (opcional)")
+            @RequestParam(required = false) Boolean active,
+
+            @Parameter(description = "Fecha de inicio (eventos posteriores a esta fecha) (opcional)",
+                    example = "2025-12-01T00:00:00")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime startDate,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "eventDate") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Event> eventPage = eventService.findWithFilters(venueId, active, startDate, pageable);
+        Page<EventResponse> responsePage = eventPage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+
 
     // ========== MÉTODOS PRIVADOS DE MAPEO ==========
 

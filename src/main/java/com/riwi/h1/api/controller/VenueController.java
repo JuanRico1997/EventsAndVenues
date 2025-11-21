@@ -15,6 +15,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -340,6 +344,143 @@ public class VenueController {
         VenueResponse response = mapToResponse(venue);
         return ResponseEntity.ok(response);
     }
+
+    // ========== 🆕 NUEVOS ENDPOINTS CON PAGINACIÓN ==========
+
+    @GetMapping("/paginated")
+    @Operation(
+            summary = "Obtener venues con paginación",
+            description = "Retorna una página de venues con soporte para paginación y ordenamiento"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de venues obtenida exitosamente"
+    )
+    public ResponseEntity<Page<VenueResponse>> getVenuesPaginated(
+            @Parameter(description = "Número de página (inicia en 0)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Tamaño de página", example = "10")
+            @RequestParam(defaultValue = "10") int size,
+
+            @Parameter(description = "Campo por el cual ordenar", example = "name")
+            @RequestParam(defaultValue = "id") String sortBy,
+
+            @Parameter(description = "Dirección de ordenamiento (asc o desc)", example = "asc")
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Venue> venuePage = venueService.findAllPaginated(pageable);
+        Page<VenueResponse> responsePage = venuePage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/paginated/city/{city}")
+    @Operation(
+            summary = "Obtener venues por ciudad con paginación",
+            description = "Retorna una página de venues de una ciudad específica"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de venues obtenida exitosamente"
+    )
+    public ResponseEntity<Page<VenueResponse>> getVenuesByCityPaginated(
+            @Parameter(description = "Nombre de la ciudad", required = true)
+            @PathVariable String city,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Venue> venuePage = venueService.findByCityPaginated(city, pageable);
+        Page<VenueResponse> responsePage = venuePage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/paginated/type/{type}")
+    @Operation(
+            summary = "Obtener venues por tipo con paginación",
+            description = "Retorna una página de venues de un tipo específico"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de venues obtenida exitosamente"
+    )
+    public ResponseEntity<Page<VenueResponse>> getVenuesByTypePaginated(
+            @Parameter(description = "Tipo de venue", required = true)
+            @PathVariable String type,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Venue> venuePage = venueService.findByTypePaginated(type, pageable);
+        Page<VenueResponse> responsePage = venuePage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @GetMapping("/search")
+    @Operation(
+            summary = "Buscar venues con filtros y paginación",
+            description = "Busca venues aplicando filtros opcionales: city, country, type, available, minCapacity"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de venues filtrados obtenida exitosamente"
+    )
+    public ResponseEntity<Page<VenueResponse>> searchVenues(
+            @Parameter(description = "Ciudad (opcional)")
+            @RequestParam(required = false) String city,
+
+            @Parameter(description = "País (opcional)")
+            @RequestParam(required = false) String country,
+
+            @Parameter(description = "Tipo de venue (opcional)")
+            @RequestParam(required = false) String type,
+
+            @Parameter(description = "Estado de disponibilidad (opcional)")
+            @RequestParam(required = false) Boolean available,
+
+            @Parameter(description = "Capacidad mínima (opcional)", example = "100")
+            @RequestParam(required = false) Integer minCapacity,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc")
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Venue> venuePage = venueService.findWithFilters(city, country, type, available, minCapacity, pageable);
+        Page<VenueResponse> responsePage = venuePage.map(this::mapToResponse);
+
+        return ResponseEntity.ok(responsePage);
+    }
+
+
+
 
     // ========== MÉTODOS PRIVADOS DE MAPEO ==========
 
