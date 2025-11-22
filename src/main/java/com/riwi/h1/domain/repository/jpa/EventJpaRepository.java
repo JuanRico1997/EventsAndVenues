@@ -1,7 +1,12 @@
 package com.riwi.h1.domain.repository.jpa;
 
 import com.riwi.h1.domain.entity.Event;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -89,4 +94,65 @@ public interface EventJpaRepository extends JpaRepository<Event, Long> {
      * @return Cantidad de eventos del venue
      */
     long countByVenueId(Long venueId);
+
+
+    // ========== 🆕 NUEVOS MÉTODOS CON PAGINACIÓN ==========
+
+    /**
+     * Busca todos los eventos con paginación.
+     *
+     * @param pageable Configuración de paginación (page, size, sort)
+     * @return Página de eventos con metadata
+     */
+    Page<Event> findAll(Pageable pageable);
+
+    /**
+     * Busca eventos activos con paginación.
+     *
+     * @param active Estado activo/inactivo
+     * @param pageable Configuración de paginación
+     * @return Página de eventos activos
+     */
+    Page<Event> findByActive(Boolean active, Pageable pageable);
+
+    /**
+     * Busca eventos por venue con paginación.
+     *
+     * @param venueId ID del venue
+     * @param pageable Configuración de paginación
+     * @return Página de eventos del venue
+     */
+    Page<Event> findByVenueId(Long venueId, Pageable pageable);
+
+    /**
+     * Busca eventos cuya fecha sea posterior a una fecha específica con paginación.
+     *
+     * @param date Fecha de referencia
+     * @param pageable Configuración de paginación
+     * @return Página de eventos futuros
+     */
+    Page<Event> findByEventDateAfter(LocalDateTime date, Pageable pageable);
+
+    // ========== 🆕 NUEVOS MÉTODOS DE FILTRADO CON QUERY PERSONALIZADA ==========
+
+    /**
+     * Busca eventos con filtros opcionales y paginación.
+     * Permite filtrar por múltiples criterios simultáneamente.
+     *
+     * @param venueId ID del venue (opcional)
+     * @param active Estado activo (opcional)
+     * @param startDate Fecha inicio (eventos posteriores a esta fecha) (opcional)
+     * @param pageable Configuración de paginación
+     * @return Página de eventos filtrados
+     */
+    @Query("SELECT e FROM Event e WHERE " +
+            "(:venueId IS NULL OR e.venueId = :venueId) AND " +
+            "(:active IS NULL OR e.active = :active) AND " +
+            "(:startDate IS NULL OR e.eventDate >= :startDate)")
+    Page<Event> findWithFilters(
+            @Param("venueId") Long venueId,
+            @Param("active") Boolean active,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable
+    );
 }

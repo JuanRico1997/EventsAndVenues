@@ -6,6 +6,8 @@ import com.riwi.h1.domain.repository.jpa.EventJpaRepository;
 import com.riwi.h1.domain.repository.jpa.VenueJpaRepository;
 import com.riwi.h1.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 
@@ -167,6 +169,69 @@ public class EventService {
         return eventJpaRepository.findByEventDateAfter(now);
     }
 
+    // ========== 🆕 NUEVOS MÉTODOS CON PAGINACIÓN ==========
+
+    /**
+     * Busca todos los eventos con paginación.
+     *
+     * @param pageable Configuración de paginación
+     * @return Página de eventos
+     */
+    public Page<Event> findAllPaginated(Pageable pageable) {
+        return eventJpaRepository.findAll(pageable);
+    }
+
+    /**
+     * Busca eventos activos con paginación.
+     *
+     * @param pageable Configuración de paginación
+     * @return Página de eventos activos
+     */
+    public Page<Event> findActiveEventsPaginated(Pageable pageable) {
+        return eventJpaRepository.findByActive(true, pageable);
+    }
+
+    /**
+     * Busca eventos futuros con paginación.
+     *
+     * @param pageable Configuración de paginación
+     * @return Página de eventos próximos
+     */
+    public Page<Event> findUpcomingEventsPaginated(Pageable pageable) {
+        LocalDateTime now = LocalDateTime.now();
+        return eventJpaRepository.findByEventDateAfter(now, pageable);
+    }
+
+    /**
+     * Busca eventos por venue con paginación.
+     *
+     * @param venueId ID del venue
+     * @param pageable Configuración de paginación
+     * @return Página de eventos del venue
+     */
+    public Page<Event> findByVenueIdPaginated(Long venueId, Pageable pageable) {
+        validateVenueExists(venueId);
+        return eventJpaRepository.findByVenueId(venueId, pageable);
+    }
+
+    /**
+     * Busca eventos con filtros opcionales y paginación.
+     *
+     * @param venueId ID del venue (opcional)
+     * @param active Estado activo (opcional)
+     * @param startDate Fecha inicio (opcional)
+     * @param pageable Configuración de paginación
+     * @return Página de eventos filtrados
+     */
+    public Page<Event> findWithFilters(Long venueId, Boolean active, LocalDateTime startDate, Pageable pageable) {
+        // Validar venue si se proporciona
+        if (venueId != null) {
+            validateVenueExists(venueId);
+        }
+
+        return eventJpaRepository.findWithFilters(venueId, active, startDate, pageable);
+    }
+
     // ========== MÉTODOS DE VALIDACIÓN PRIVADOS ==========
 
 
@@ -175,7 +240,6 @@ public class EventService {
             throw new IllegalArgumentException("Event name cannot be empty");
         }
     }
-
 
     private void validateVenueExists(Long venueId) {
         if (!venueJpaRepository.existsById(venueId)) {

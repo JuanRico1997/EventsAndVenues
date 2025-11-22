@@ -6,6 +6,8 @@ import com.riwi.h1.domain.repository.jpa.EventJpaRepository;
 import com.riwi.h1.domain.repository.jpa.VenueJpaRepository;
 import com.riwi.h1.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -194,6 +196,91 @@ public class VenueService {
 
         venue.setAvailable(true);
         return venueJpaRepository.save(venue);
+    }
+
+    // ========== 🆕 NUEVOS MÉTODOS CON PAGINACIÓN ==========
+
+    /**
+     * Busca todos los venues con paginación.
+     *
+     * @param pageable Configuración de paginación
+     * @return Página de venues
+     */
+    public Page<Venue> findAllPaginated(Pageable pageable) {
+        return venueJpaRepository.findAll(pageable);
+    }
+
+    /**
+     * Busca venues por ciudad con paginación.
+     *
+     * @param city Ciudad
+     * @param pageable Configuración de paginación
+     * @return Página de venues en la ciudad
+     */
+    public Page<Venue> findByCityPaginated(String city, Pageable pageable) {
+        if (city == null || city.trim().isEmpty()) {
+            throw new IllegalArgumentException("City cannot be empty");
+        }
+        return venueJpaRepository.findByCity(city, pageable);
+    }
+
+    /**
+     * Busca venues por tipo con paginación.
+     *
+     * @param type Tipo de venue
+     * @param pageable Configuración de paginación
+     * @return Página de venues del tipo especificado
+     */
+    public Page<Venue> findByTypePaginated(String type, Pageable pageable) {
+        if (type == null || type.trim().isEmpty()) {
+            throw new IllegalArgumentException("Type cannot be empty");
+        }
+        return venueJpaRepository.findByType(type, pageable);
+    }
+
+    /**
+     * Busca venues disponibles con paginación.
+     *
+     * @param available Estado de disponibilidad
+     * @param pageable Configuración de paginación
+     * @return Página de venues disponibles/no disponibles
+     */
+    public Page<Venue> findByAvailablePaginated(Boolean available, Pageable pageable) {
+        if (available == null) {
+            throw new IllegalArgumentException("Available status cannot be null");
+        }
+        return venueJpaRepository.findByAvailable(available, pageable);
+    }
+
+    /**
+     * Busca venues con capacidad mínima con paginación.
+     *
+     * @param minCapacity Capacidad mínima requerida
+     * @param pageable Configuración de paginación
+     * @return Página de venues que cumplen la capacidad
+     */
+    public Page<Venue> findByMinCapacityPaginated(Integer minCapacity, Pageable pageable) {
+        if (minCapacity == null || minCapacity <= 0) {
+            throw new IllegalArgumentException("Min capacity must be positive");
+        }
+        return venueJpaRepository.findByMaxCapacityGreaterThanEqual(minCapacity, pageable);
+    }
+
+    /**
+     * Busca venues con filtros opcionales y paginación.
+     *
+     * @param city Ciudad (opcional)
+     * @param country País (opcional)
+     * @param type Tipo (opcional)
+     * @param available Disponibilidad (opcional)
+     * @param minCapacity Capacidad mínima (opcional)
+     * @param pageable Configuración de paginación
+     * @return Página de venues filtrados
+     */
+    public Page<Venue> findWithFilters(String city, String country, String type,
+                                       Boolean available, Integer minCapacity,
+                                       Pageable pageable) {
+        return venueJpaRepository.findWithFilters(city, country, type, available, minCapacity, pageable);
     }
 
     // ========== MÉTODOS DE VALIDACIÓN PRIVADOS ==========
