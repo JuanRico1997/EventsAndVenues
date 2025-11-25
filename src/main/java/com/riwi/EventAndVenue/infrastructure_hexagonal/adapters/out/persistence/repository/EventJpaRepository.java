@@ -2,6 +2,9 @@ package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence
 
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.EventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -14,7 +17,7 @@ import java.util.List;
  * Esta interfaz NO se expone al dominio, solo se usa en la capa de infraestructura.
  */
 @Repository
-public interface EventJpaRepository extends JpaRepository<EventEntity, Long> {
+public interface EventJpaRepository extends JpaRepository<EventEntity, Long>, JpaSpecificationExecutor<EventEntity> {
 
     /**
      * Busca eventos por venue ID.
@@ -72,4 +75,38 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, Long> {
      * @return Cantidad de eventos del venue
      */
     long countByVenueId(Long venueId);
+
+    /**
+     * Busca eventos con su venue cargado (evita N+1).
+     * Usa join fetch para cargar el venue en una sola consulta.
+     */
+    @Query("SELECT e FROM EventEntity e JOIN FETCH e.venue WHERE e.active = true")
+    List<EventEntity> findAllActiveWithVenue();
+
+    /**
+     * Busca eventos por venue usando join fetch.
+     *
+     * @param venueId ID del venue
+     * @return Lista de eventos del venue con el venue cargado
+     */
+    @Query("SELECT e FROM EventEntity e JOIN FETCH e.venue v WHERE v.id = :venueId")
+    List<EventEntity> findByVenueIdWithVenue(@Param("venueId") Long venueId);
+
+    /**
+     * Busca eventos próximos (después de una fecha) con venue cargado.
+     *
+     * @param date Fecha límite
+     * @return Lista de eventos próximos con venue cargado
+     */
+    @Query("SELECT e FROM EventEntity e JOIN FETCH e.venue WHERE e.eventDate >= :date ORDER BY e.eventDate ASC")
+    List<EventEntity> findUpcomingEventsWithVenue(@Param("date") LocalDateTime date);
+
+    /**
+     * Cuenta eventos por venue sin cargar las entidades completas.
+     *
+     * @param venueId ID del venue
+     * @return Cantidad de eventos
+     */
+    @Query("SELECT COUNT(e) FROM EventEntity e WHERE e.venue.id = :venueId")
+    long countEventsByVenue(@Param("venueId") Long venueId);
 }

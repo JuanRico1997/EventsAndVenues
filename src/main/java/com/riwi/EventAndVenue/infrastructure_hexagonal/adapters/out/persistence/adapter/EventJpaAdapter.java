@@ -5,6 +5,8 @@ import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.EventEntity;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.mapper.EventJpaMapper;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.repository.EventJpaRepository;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.specification.EventSpecifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -98,5 +100,50 @@ public class EventJpaAdapter implements EventRepositoryPort {
     @Override
     public long countByVenueId(Long venueId) {
         return jpaRepository.countByVenueId(venueId);
+    }
+
+    /**
+     * Busca eventos aplicando filtros dinámicos con Specifications.
+     *
+     * @param venueId Filtro por venue (opcional)
+     * @param active Filtro por estado activo/inactivo (opcional)
+     * @param startDate Filtro por fecha inicio (opcional)
+     * @param endDate Filtro por fecha fin (opcional)
+     * @param name Filtro por nombre parcial (opcional)
+     * @param minCapacity Filtro por capacidad mínima (opcional)
+     * @param maxPrice Filtro por precio máximo (opcional)
+     * @return Lista de eventos que cumplen los filtros
+     */
+    public List<Event> findByFilters(Long venueId, Boolean active, LocalDateTime startDate,
+                                     LocalDateTime endDate, String name, Integer minCapacity,
+                                     Double maxPrice) {
+        // Construir Specification combinando los filtros
+        Specification<EventEntity> spec = (root, query, criteriaBuilder) ->
+                criteriaBuilder.conjunction();
+
+        if (venueId != null) {
+            spec = spec.and(EventSpecifications.hasVenue(venueId));
+        }
+        if (active != null) {
+            spec = spec.and(EventSpecifications.hasStatus(active));
+        }
+        if (startDate != null || endDate != null) {
+            spec = spec.and(EventSpecifications.isBetweenDates(startDate, endDate));
+        }
+        if (name != null && !name.trim().isEmpty()) {
+            spec = spec.and(EventSpecifications.nameContains(name));
+        }
+        if (minCapacity != null) {
+            spec = spec.and(EventSpecifications.hasMinCapacity(minCapacity));
+        }
+        if (maxPrice != null) {
+            spec = spec.and(EventSpecifications.hasMaxPrice(maxPrice));
+        }
+
+        // Ejecutar la búsqueda con las Specifications
+        List<EventEntity> entities = jpaRepository.findAll(spec);
+
+        // Convertir a dominio
+        return mapper.toDomainList(entities);
     }
 }
