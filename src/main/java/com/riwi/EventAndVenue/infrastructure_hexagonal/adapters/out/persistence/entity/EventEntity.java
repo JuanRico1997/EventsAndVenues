@@ -20,8 +20,9 @@ public class EventEntity {
     @Column(name = "event_date", nullable = false)
     private LocalDateTime eventDate;
 
-    @Column(name = "venue_id")
-    private Long venueId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private VenueEntity venue;
 
     @Column(name = "capacity")
     private Integer capacity;
@@ -42,13 +43,13 @@ public class EventEntity {
     }
 
     public EventEntity(Long id, String name, String description, LocalDateTime eventDate,
-                       Long venueId, Integer capacity, Double ticketPrice, Boolean active,
+                       VenueEntity venue,Integer capacity, Double ticketPrice, Boolean active,
                        LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.eventDate = eventDate;
-        this.venueId = venueId;
+        this.venue = venue;
         this.capacity = capacity;
         this.ticketPrice = ticketPrice;
         this.active = active;
@@ -104,13 +105,9 @@ public class EventEntity {
         this.eventDate = eventDate;
     }
 
-    public Long getVenueId() {
-        return venueId;
-    }
+    public VenueEntity getVenue() {return venue;}
 
-    public void setVenueId(Long venueId) {
-        this.venueId = venueId;
-    }
+    public void setVenue(VenueEntity venue) {this.venue = venue;}
 
     public Integer getCapacity() {
         return capacity;
