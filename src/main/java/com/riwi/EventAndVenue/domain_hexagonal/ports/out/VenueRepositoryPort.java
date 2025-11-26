@@ -84,6 +84,20 @@ public interface VenueRepositoryPort {
      * @return Lista de venues que cumplen el criterio
      */
     List<Venue> findByCapacityGreaterThanEqual(Integer capacity);
+
+    /**
+     * Busca venues aplicando múltiples filtros dinámicos.
+     *
+     * @param location Filtro por ubicación parcial (opcional)
+     * @param minCapacity Filtro por capacidad mínima (opcional)
+     * @param maxCapacity Filtro por capacidad máxima (opcional)
+     * @param active Filtro por estado activo/inactivo (opcional)
+     * @param name Filtro por nombre parcial (opcional)
+     * @param hasEvents Filtro por venues con/sin eventos (opcional)
+     * @return Lista de venues que cumplen los filtros
+     */
+    List<Venue> findByFilters(String location, Integer minCapacity, Integer maxCapacity,
+                              Boolean active, String name, Boolean hasEvents);
 }
 
 

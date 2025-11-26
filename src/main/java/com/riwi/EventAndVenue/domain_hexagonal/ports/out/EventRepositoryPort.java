@@ -102,4 +102,20 @@ public interface EventRepositoryPort {
      * @return Cantidad de eventos del venue
      */
     long countByVenueId(Long venueId);
+
+    /**
+     * Busca eventos aplicando múltiples filtros dinámicos.
+     *
+     * @param venueId Filtro por venue (opcional)
+     * @param active Filtro por estado activo/inactivo (opcional)
+     * @param startDate Filtro por fecha inicio (opcional)
+     * @param endDate Filtro por fecha fin (opcional)
+     * @param name Filtro por nombre parcial (opcional)
+     * @param minCapacity Filtro por capacidad mínima (opcional)
+     * @param maxPrice Filtro por precio máximo (opcional)
+     * @return Lista de eventos que cumplen los filtros
+     */
+    List<Event> findByFilters(Long venueId, Boolean active, LocalDateTime startDate,
+                              LocalDateTime endDate, String name, Integer minCapacity,
+                              Double maxPrice);
 }

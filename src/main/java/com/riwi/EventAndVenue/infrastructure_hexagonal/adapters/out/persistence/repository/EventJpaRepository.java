@@ -1,6 +1,7 @@
 package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.repository;
 
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.EventEntity;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -109,4 +110,19 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, Long>, Jp
      */
     @Query("SELECT COUNT(e) FROM EventEntity e WHERE e.venue.id = :venueId")
     long countEventsByVenue(@Param("venueId") Long venueId);
+
+    /**
+     * Encuentra todos los eventos con sus venues cargados.
+     * Usa @EntityGraph para evitar N+1 queries.
+     */
+    @EntityGraph(attributePaths = {"venue"})
+    @Override
+    List<EventEntity> findAll();
+
+    /**
+     * Encuentra eventos activos con sus venues cargados.
+     * Combina @EntityGraph con una consulta personalizada.
+     */
+    @EntityGraph(attributePaths = {"venue"})
+    List<EventEntity> findByActiveTrue();
 }

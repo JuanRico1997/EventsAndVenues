@@ -4,10 +4,13 @@ import com.riwi.EventAndVenue.application_hexagonal.service.EventQueryService;
 import com.riwi.EventAndVenue.domain_hexagonal.model.Event;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.CreateEventUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.DeleteEventUseCase;
+import com.riwi.EventAndVenue.domain_hexagonal.ports.in.SearchEventsUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.UpdateEventUseCase;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filter.EventFilter;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.EventRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.EventResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.EventRestMapper;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.adapter.EventJpaAdapter;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +34,9 @@ public class EventController {
     private final UpdateEventUseCase updateEventUseCase;
     private final DeleteEventUseCase deleteEventUseCase;
     private final EventQueryService eventQueryService;
+    private final SearchEventsUseCase searchEventsUseCase;
     private final EventRestMapper mapper;
+
 
     /**
      * Constructor con inyección de dependencias.
@@ -41,11 +46,13 @@ public class EventController {
                            UpdateEventUseCase updateEventUseCase,
                            DeleteEventUseCase deleteEventUseCase,
                            EventQueryService eventQueryService,
+                           SearchEventsUseCase searchEventsUseCase,
                            EventRestMapper mapper) {
         this.createEventUseCase = createEventUseCase;
         this.updateEventUseCase = updateEventUseCase;
         this.deleteEventUseCase = deleteEventUseCase;
         this.eventQueryService = eventQueryService;
+        this.searchEventsUseCase = searchEventsUseCase;
         this.mapper = mapper;
     }
 
@@ -174,5 +181,31 @@ public class EventController {
     public ResponseEntity<Long> countEventsByVenue(@PathVariable Long venueId) {
         long count = eventQueryService.countByVenueId(venueId);
         return ResponseEntity.ok(count);
+    }
+
+    /**
+     * POST /api/events/filter
+     * Buscar eventos con filtros dinámicos.
+     *
+     * Usa Specifications para construir consultas dinámicas según los filtros proporcionados.
+     */
+    @PostMapping("/filter")
+    public ResponseEntity<List<EventResponse>> filterEvents(@RequestBody EventFilter filter) {
+
+        // Llamar al método de búsqueda filtrada
+        List<Event> events = searchEventsUseCase.execute(
+                filter.getVenueId(),
+                filter.getActive(),
+                filter.getStartDate(),
+                filter.getEndDate(),
+                filter.getName(),
+                filter.getMinCapacity(),
+                filter.getMaxPrice()
+        );
+
+        // Convertir a DTOs de respuesta
+        List<EventResponse> responses = mapper.toResponseList(events);
+
+        return ResponseEntity.ok(responses);
     }
 }

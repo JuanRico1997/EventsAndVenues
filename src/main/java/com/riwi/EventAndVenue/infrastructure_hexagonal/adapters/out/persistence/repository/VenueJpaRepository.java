@@ -1,6 +1,7 @@
 package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.repository;
 
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.VenueEntity;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -78,5 +79,12 @@ public interface VenueJpaRepository extends JpaRepository<VenueEntity, Long>, Jp
      */
     @Query("SELECT DISTINCT v FROM VenueEntity v JOIN v.events e WHERE v.active = true AND e.active = true")
     List<VenueEntity> findActiveVenuesWithActiveEvents();
+
+    /**
+     * Encuentra venues activos con sus eventos cargados.
+     * Usa @EntityGraph para cargar la colección de eventos en una sola consulta.
+     */
+    @EntityGraph(attributePaths = {"events"})
+    List<VenueEntity> findByActiveTrue();
 
 }
