@@ -2,6 +2,7 @@ package com.riwi.EventAndVenue.application_hexagonal.service;
 
 import com.riwi.EventAndVenue.domain_hexagonal.model.Event;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ public class EventQueryService {
     /**
      * Busca un evento por su ID.
      */
+    @Transactional(readOnly = true)
     public Optional<Event> findById(Long id) {
         return eventRepository.findById(id);
     }
@@ -31,6 +33,7 @@ public class EventQueryService {
     /**
      * Obtiene todos los eventos.
      */
+    @Transactional(readOnly = true)
     public List<Event> findAll() {
         return eventRepository.findAll();
     }
@@ -38,6 +41,7 @@ public class EventQueryService {
     /**
      * Busca eventos por venue.
      */
+    @Transactional(readOnly = true)
     public List<Event> findByVenueId(Long venueId) {
         return eventRepository.findByVenueId(venueId);
     }
@@ -45,6 +49,7 @@ public class EventQueryService {
     /**
      * Busca eventos activos.
      */
+    @Transactional(readOnly = true)
     public List<Event> findActiveEvents() {
         return eventRepository.findByActive(true);
     }
@@ -52,6 +57,7 @@ public class EventQueryService {
     /**
      * Busca eventos próximos (futuros).
      */
+    @Transactional(readOnly = true)
     public List<Event> findUpcomingEvents() {
         LocalDateTime now = LocalDateTime.now();
         return eventRepository.findByEventDateAfter(now);
@@ -60,6 +66,7 @@ public class EventQueryService {
     /**
      * Busca eventos en un rango de fechas.
      */
+    @Transactional(readOnly = true)
     public List<Event> findByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         return eventRepository.findByEventDateBetween(startDate, endDate);
     }
@@ -67,6 +74,7 @@ public class EventQueryService {
     /**
      * Cuenta eventos por venue.
      */
+    @Transactional(readOnly = true)
     public long countByVenueId(Long venueId) {
         return eventRepository.countByVenueId(venueId);
     }

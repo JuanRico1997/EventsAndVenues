@@ -3,6 +3,7 @@ package com.riwi.EventAndVenue.application_hexagonal.usecase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.DeleteVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del caso de uso: Eliminar Venue.
@@ -20,6 +21,7 @@ public class DeleteVenueUseCaseImpl implements DeleteVenueUseCase {
         this.eventRepository = eventRepository;
     }
 
+    @Transactional
     @Override
     public void execute(Long id) {
         // REGLA 1: Verificar que el venue existe

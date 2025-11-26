@@ -3,6 +3,7 @@ package com.riwi.EventAndVenue.application_hexagonal.usecase;
 import com.riwi.EventAndVenue.domain_hexagonal.model.Venue;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.CreateVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del caso de uso: Crear Venue.
@@ -17,6 +18,7 @@ public class CreateVenueUseCaseImpl implements CreateVenueUseCase {
         this.venueRepository = venueRepository;
     }
 
+    @Transactional
     @Override
     public Venue execute(Venue venue) {
         // REGLA 1: El nombre no puede estar vacío
