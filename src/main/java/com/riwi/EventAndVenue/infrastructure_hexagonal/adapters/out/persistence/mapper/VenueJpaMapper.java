@@ -33,6 +33,7 @@ public interface VenueJpaMapper {
      * @param domain Modelo de dominio
      * @return Entidad JPA
      */
+    @Mapping(target = "events", ignore = true)
     VenueEntity toEntity(Venue domain);
 
     /**
@@ -60,5 +61,6 @@ public interface VenueJpaMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "events", ignore = true)
     void updateEntityFromDomain(Venue domain, @MappingTarget VenueEntity entity);
 }

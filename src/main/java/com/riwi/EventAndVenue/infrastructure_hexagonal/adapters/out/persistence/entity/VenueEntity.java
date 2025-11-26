@@ -2,6 +2,8 @@ package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "venues")
@@ -31,6 +33,9 @@ public class VenueEntity {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<EventEntity> events = new ArrayList<>();
 
     public VenueEntity() {
     }
@@ -126,5 +131,29 @@ public class VenueEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<EventEntity> getEvents() {return events;}
+
+    public void setEvents(List<EventEntity> events) {this.events = events;}
+
+    // MÉTODOS HELPER PARA MANEJAR LA RELACIÓN
+
+    /**
+     * Agrega un evento a este venue.
+     * Mantiene la consistencia bidireccional de la relación.
+     */
+    public void addEvent(EventEntity event) {
+        events.add(event);
+        event.setVenue(this);
+    }
+
+    /**
+     * Remueve un evento de este venue.
+     * Mantiene la consistencia bidireccional de la relación.
+     */
+    public void removeEvent(EventEntity event) {
+        events.remove(event);
+        event.setVenue(null);
     }
 }

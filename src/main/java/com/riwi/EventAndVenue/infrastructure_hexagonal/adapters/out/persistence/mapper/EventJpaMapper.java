@@ -2,63 +2,74 @@ package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence
 
 import com.riwi.EventAndVenue.domain_hexagonal.model.Event;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.EventEntity;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.entity.VenueEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 
 import java.util.List;
 
 /**
  * Mapper de MapStruct para convertir entre Event (dominio) y EventEntity (JPA).
  *
- * MapStruct genera automáticamente la implementación en tiempo de compilación.
- * Solo definimos las interfaces de los métodos de conversión.
- *
- * componentModel = "spring" - Hace que Spring detecte el mapper como @Component
+ * Maneja la conversión entre venueId (dominio) y venue (entidad JPA).
  */
 @Mapper(componentModel = "spring")
 public interface EventJpaMapper {
 
     /**
      * Convierte de EventEntity (JPA) a Event (dominio).
-     *
-     * @param entity Entidad JPA
-     * @return Modelo de dominio
+     * Extrae el ID del venue de la entidad.
      */
+    @Mapping(target = "venueId", source = "venue", qualifiedByName = "venueToVenueId")
     Event toDomain(EventEntity entity);
 
     /**
      * Convierte de Event (dominio) a EventEntity (JPA).
-     *
-     * @param domain Modelo de dominio
-     * @return Entidad JPA
+     * Crea una referencia de venue solo con el ID.
      */
+    @Mapping(target = "venue", source = "venueId", qualifiedByName = "venueIdToVenue")
     EventEntity toEntity(Event domain);
 
     /**
      * Convierte una lista de EventEntity a lista de Event.
-     *
-     * @param entities Lista de entidades JPA
-     * @return Lista de modelos de dominio
      */
     List<Event> toDomainList(List<EventEntity> entities);
 
     /**
      * Convierte una lista de Event a lista de EventEntity.
-     *
-     * @param domains Lista de modelos de dominio
-     * @return Lista de entidades JPA
      */
     List<EventEntity> toEntityList(List<Event> domains);
 
     /**
      * Actualiza una entidad existente con datos del dominio.
-     * Útil para operaciones de UPDATE sin perder el ID.
-     *
-     * @param domain Modelo de dominio con los datos nuevos
-     * @param entity Entidad existente que será actualizada
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "venue", source = "venueId", qualifiedByName = "venueIdToVenue")
     void updateEntityFromDomain(Event domain, @MappingTarget EventEntity entity);
+
+    /**
+     * Extrae el ID del venue de la entidad.
+     * Si el venue es null, retorna null.
+     */
+    @Named("venueToVenueId")
+    default Long venueToVenueId(VenueEntity venue) {
+        return venue != null ? venue.getId() : null;
+    }
+
+    /**
+     * Crea una referencia de VenueEntity con solo el ID.
+     * No carga el venue completo de la base de datos.
+     */
+    @Named("venueIdToVenue")
+    default VenueEntity venueIdToVenue(Long venueId) {
+        if (venueId == null) {
+            return null;
+        }
+        VenueEntity venue = new VenueEntity();
+        venue.setId(venueId);
+        return venue;
+    }
 }

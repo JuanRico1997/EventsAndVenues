@@ -3,6 +3,7 @@ package com.riwi.EventAndVenue.application_hexagonal.usecase;
 import com.riwi.EventAndVenue.domain_hexagonal.model.Venue;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.UpdateVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del caso de uso: Actualizar Venue.
@@ -17,6 +18,7 @@ public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
         this.venueRepository = venueRepository;
     }
 
+    @Transactional
     @Override
     public Venue execute(Long id, Venue venueData) {
         // REGLA 1: Verificar que el venue existe

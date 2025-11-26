@@ -4,6 +4,7 @@ import com.riwi.EventAndVenue.domain_hexagonal.model.Event;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.UpdateEventUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
+import jakarta.transaction.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +24,7 @@ public class UpdateEventUseCaseImpl implements UpdateEventUseCase {
         this.venueRepository = venueRepository;
     }
 
+    @Transactional
     @Override
     public Event execute(Long id, Event eventData) {
         // REGLA 1: Verificar que el evento existe

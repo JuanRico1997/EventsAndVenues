@@ -2,6 +2,7 @@ package com.riwi.EventAndVenue.application_hexagonal.usecase;
 
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.DeleteEventUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
+import jakarta.transaction.Transactional;
 
 /**
  * Implementación del caso de uso: Eliminar Evento.
@@ -16,6 +17,7 @@ public class DeleteEventUseCaseImpl implements DeleteEventUseCase {
         this.eventRepository = eventRepository;
     }
 
+    @Transactional
     @Override
     public void execute(Long id) {
         // REGLA 1: Verificar que el evento existe antes de eliminar

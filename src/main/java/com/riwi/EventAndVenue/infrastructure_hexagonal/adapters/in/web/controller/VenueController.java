@@ -4,7 +4,9 @@ import com.riwi.EventAndVenue.application_hexagonal.service.VenueQueryService;
 import com.riwi.EventAndVenue.domain_hexagonal.model.Venue;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.CreateVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.DeleteVenueUseCase;
+import com.riwi.EventAndVenue.domain_hexagonal.ports.in.SearchVenuesUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.UpdateVenueUseCase;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filter.VenueFilter;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.VenueRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.VenueResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.VenueRestMapper;
@@ -30,6 +32,7 @@ public class VenueController {
     private final UpdateVenueUseCase updateVenueUseCase;
     private final DeleteVenueUseCase deleteVenueUseCase;
     private final VenueQueryService venueQueryService;
+    private final SearchVenuesUseCase searchVenuesUseCase;
     private final VenueRestMapper mapper;
 
     /**
@@ -40,11 +43,13 @@ public class VenueController {
                            UpdateVenueUseCase updateVenueUseCase,
                            DeleteVenueUseCase deleteVenueUseCase,
                            VenueQueryService venueQueryService,
+                           SearchVenuesUseCase searchVenuesUseCase,
                            VenueRestMapper mapper) {
         this.createVenueUseCase = createVenueUseCase;
         this.updateVenueUseCase = updateVenueUseCase;
         this.deleteVenueUseCase = deleteVenueUseCase;
         this.venueQueryService = venueQueryService;
+        this.searchVenuesUseCase = searchVenuesUseCase;
         this.mapper = mapper;
     }
 
@@ -149,6 +154,28 @@ public class VenueController {
             @RequestParam Integer minCapacity) {
         List<Venue> venues = venueQueryService.findByMinimumCapacity(minCapacity);
         List<VenueResponse> responses = mapper.toResponseList(venues);
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * POST /api/venues/filter
+     * Buscar venues con filtros dinámicos usando Specifications.
+     */
+    @PostMapping("/filter")
+    public ResponseEntity<List<VenueResponse>> filterVenues(@RequestBody VenueFilter filter) {
+        // Usar el caso de uso (arquitectura hexagonal correcta)
+        List<Venue> venues = searchVenuesUseCase.execute(
+                filter.getLocation(),
+                filter.getMinCapacity(),
+                filter.getMaxCapacity(),
+                filter.getActive(),
+                filter.getName(),
+                filter.getHasEvents()
+        );
+
+        // Convertir a DTOs de respuesta
+        List<VenueResponse> responses = mapper.toResponseList(venues);
+
         return ResponseEntity.ok(responses);
     }
 }

@@ -99,6 +99,22 @@ public class ApplicationConfig {
     public VenueQueryService venueQueryService(VenueRepositoryPort venueRepository) {
         return new VenueQueryService(venueRepository);
     }
+
+    /**
+     * Bean para búsqueda de eventos con filtros dinámicos.
+     */
+    @Bean
+    public SearchEventsUseCase searchEventsUseCase(EventRepositoryPort eventRepository) {
+        return new SearchEventsUseCaseImpl(eventRepository);
+    }
+
+    /**
+     * Bean para búsqueda de venues con filtros dinámicos.
+     */
+    @Bean
+    public SearchVenuesUseCase searchVenuesUseCase(VenueRepositoryPort venueRepository) {
+        return new SearchVenuesUseCaseImpl(venueRepository);
+    }
 }
 /**
 
