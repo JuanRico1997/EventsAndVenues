@@ -1,32 +1,35 @@
 package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request;
 
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.FutureOrNull;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
 import jakarta.validation.constraints.*;
+
 import java.time.LocalDateTime;
 
 /**
- * DTO para recibir datos de Event desde el cliente.
- *
- * Contiene validaciones para asegurar que los datos sean correctos.
- * Se usa en los endpoints POST y PUT.
+ * DTO de entrada para Event con validaciones avanzadas y grupos.
  */
 public class EventRequest {
 
-    @NotBlank(message = "El nombre del evento es obligatorio")
-    @Size(max = 100, message = "El nombre no puede exceder 100 caracteres")
+    @NotBlank(message = "{event.name.required}", groups = {OnCreate.class})
+    @Size(min = 3, max = 100, message = "{event.name.size}", groups = {OnCreate.class, OnUpdate.class})
     private String name;
 
-    @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
+    @Size(max = 500, message = "{event.description.size}", groups = {OnCreate.class, OnUpdate.class})
     private String description;
 
-    @NotNull(message = "La fecha del evento es obligatoria")
+    @NotNull(message = "{event.eventDate.required}", groups = {OnCreate.class})
+    @FutureOrNull(message = "{event.eventDate.future}", groups = {OnCreate.class, OnUpdate.class})
     private LocalDateTime eventDate;
 
+    @NotNull(message = "{event.venueId.required}", groups = {OnCreate.class})
     private Long venueId;
 
-    @Min(value = 1, message = "La capacidad debe ser al menos 1")
+    @Positive(message = "{event.capacity.positive}", groups = {OnCreate.class, OnUpdate.class})
     private Integer capacity;
 
-    @DecimalMin(value = "0.0", message = "El precio no puede ser negativo")
+    @PositiveOrZero(message = "{event.ticketPrice.positive}", groups = {OnCreate.class, OnUpdate.class})
     private Double ticketPrice;
 
     private Boolean active;
@@ -36,8 +39,8 @@ public class EventRequest {
     }
 
     // Constructor completo
-    public EventRequest(String name, String description, LocalDateTime eventDate,
-                        Long venueId, Integer capacity, Double ticketPrice, Boolean active) {
+    public EventRequest(String name, String description, LocalDateTime eventDate, Long venueId,
+                        Integer capacity, Double ticketPrice, Boolean active) {
         this.name = name;
         this.description = description;
         this.eventDate = eventDate;
@@ -47,8 +50,7 @@ public class EventRequest {
         this.active = active;
     }
 
-    // GETTERS Y SETTERS
-
+    // Getters y Setters
     public String getName() {
         return name;
     }

@@ -10,9 +10,12 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filte
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.VenueRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.VenueResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.VenueRestMapper;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,7 +61,8 @@ public class VenueController {
      * Crear un nuevo venue.
      */
     @PostMapping
-    public ResponseEntity<VenueResponse> createVenue(@Valid @RequestBody VenueRequest request) {
+    public ResponseEntity<VenueResponse> createVenue(
+            @Validated(OnCreate.class) @RequestBody VenueRequest request) {
         // Convertir DTO a dominio
         Venue venue = mapper.toDomain(request);
 
@@ -77,7 +81,7 @@ public class VenueController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<VenueResponse> updateVenue(@PathVariable Long id,
-                                                     @Valid @RequestBody VenueRequest request) {
+                                                     @Validated(OnUpdate.class) @RequestBody VenueRequest request) {
         // Convertir DTO a dominio
         Venue venue = mapper.toDomain(request);
 

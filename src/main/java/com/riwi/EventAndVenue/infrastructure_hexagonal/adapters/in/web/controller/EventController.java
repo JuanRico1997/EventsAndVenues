@@ -10,10 +10,13 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filte
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.EventRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.EventResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.EventRestMapper;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.adapter.EventJpaAdapter;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -61,7 +64,8 @@ public class EventController {
      * Crear un nuevo evento.
      */
     @PostMapping
-    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventRequest request) {
+    public ResponseEntity<EventResponse> createEvent(
+            @Validated(OnCreate.class) @RequestBody EventRequest request) {
         // Convertir DTO a dominio
         Event event = mapper.toDomain(request);
 
@@ -80,7 +84,7 @@ public class EventController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id,
-                                                     @Valid @RequestBody EventRequest request) {
+                                                     @Validated(OnUpdate.class) @RequestBody EventRequest request) {
         // Convertir DTO a dominio
         Event event = mapper.toDomain(request);
 
