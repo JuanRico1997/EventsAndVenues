@@ -3,7 +3,10 @@ package com.riwi.EventAndVenue.application_hexagonal.usecase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.DeleteVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementación del caso de uso: Eliminar Venue.
@@ -12,6 +15,7 @@ import jakarta.transaction.Transactional;
  */
 public class DeleteVenueUseCaseImpl implements DeleteVenueUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(DeleteVenueUseCaseImpl.class);
     private final VenueRepositoryPort venueRepository;
     private final EventRepositoryPort eventRepository;
 
@@ -24,20 +28,16 @@ public class DeleteVenueUseCaseImpl implements DeleteVenueUseCase {
     @Transactional
     @Override
     public void execute(Long id) {
-        // REGLA 1: Verificar que el venue existe
+        log.info("VENUE_DELETE_START venueId={}", id);
+
+        // Verificar que existe antes de eliminar
         if (!venueRepository.existsById(id)) {
-            throw new IllegalArgumentException("Venue con ID " + id + " no encontrado");
+            log.error("VENUE_DELETE_FAILED venueId={} reason=VenueNotFound", id);
+            throw new EntityNotFoundException("Venue not found with id: " + id);
         }
 
-        // REGLA 2 (OPCIONAL): Verificar que no tenga eventos asociados
-        long eventCount = eventRepository.countByVenueId(id);
-        if (eventCount > 0) {
-            throw new IllegalArgumentException(
-                    "No se puede eliminar el venue porque tiene " + eventCount + " evento(s) asociado(s)"
-            );
-        }
-
-        // Eliminar el venue
         venueRepository.deleteById(id);
+
+        log.info("VENUE_DELETE_SUCCESS venueId={}", id);
     }
 }

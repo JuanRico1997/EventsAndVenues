@@ -6,6 +6,8 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.mapper.EventJpaMapper;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.repository.EventJpaRepository;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.specification.EventSpecifications;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ import java.util.Optional;
 @Component
 public class EventJpaAdapter implements EventRepositoryPort {
 
+    private static final Logger log = LoggerFactory.getLogger(EventJpaAdapter.class);
     private final EventJpaRepository jpaRepository;
     private final EventJpaMapper mapper;
 
@@ -36,6 +39,8 @@ public class EventJpaAdapter implements EventRepositoryPort {
 
     @Override
     public Event save(Event event) {
+        log.debug("DB_SAVE_EVENT eventName={}", event.getName());
+
         // Convertir de dominio a entidad JPA
         EventEntity entity = mapper.toEntity(event);
 
@@ -43,7 +48,11 @@ public class EventJpaAdapter implements EventRepositoryPort {
         EventEntity savedEntity = jpaRepository.save(entity);
 
         // Convertir de entidad JPA a dominio
-        return mapper.toDomain(savedEntity);
+        Event result = mapper.toDomain(savedEntity);
+
+        log.debug("DB_SAVE_EVENT_SUCCESS eventId={} eventName={}", result.getId(), result.getName());
+
+        return result;
     }
 
     @Override
@@ -60,7 +69,11 @@ public class EventJpaAdapter implements EventRepositoryPort {
 
     @Override
     public void deleteById(Long id) {
+        log.debug("DB_DELETE_EVENT eventId={}", id);
+
         jpaRepository.deleteById(id);
+
+        log.debug("DB_DELETE_EVENT_SUCCESS eventId={}", id);
     }
 
     @Override

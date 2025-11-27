@@ -6,6 +6,8 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.mapper.VenueJpaMapper;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.repository.VenueJpaRepository;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.specification.VenueSpecifications;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,7 @@ import java.util.Optional;
 @Component
 public class VenueJpaAdapter implements VenueRepositoryPort {
 
+    private static final Logger log = LoggerFactory.getLogger(VenueJpaAdapter.class);
     private final VenueJpaRepository jpaRepository;
     private final VenueJpaMapper mapper;
 
@@ -35,6 +38,8 @@ public class VenueJpaAdapter implements VenueRepositoryPort {
 
     @Override
     public Venue save(Venue venue) {
+        log.debug("DB_SAVE_VENUE venueName={}", venue.getName());
+
         // Convertir de dominio a entidad JPA
         VenueEntity entity = mapper.toEntity(venue);
 
@@ -42,7 +47,11 @@ public class VenueJpaAdapter implements VenueRepositoryPort {
         VenueEntity savedEntity = jpaRepository.save(entity);
 
         // Convertir de entidad JPA a dominio
-        return mapper.toDomain(savedEntity);
+        Venue result = mapper.toDomain(savedEntity);
+
+        log.debug("DB_SAVE_VENUE_SUCCESS venueId={} venueName={}", result.getId(), result.getName());
+
+        return result;
     }
 
     @Override
@@ -59,7 +68,11 @@ public class VenueJpaAdapter implements VenueRepositoryPort {
 
     @Override
     public void deleteById(Long id) {
+        log.debug("DB_DELETE_VENUE venueId={}", id);
+
         jpaRepository.deleteById(id);
+
+        log.debug("DB_DELETE_VENUE_SUCCESS venueId={}", id);
     }
 
     @Override

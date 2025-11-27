@@ -4,6 +4,8 @@ import com.riwi.EventAndVenue.domain_hexagonal.model.Venue;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.CreateVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementación del caso de uso: Crear Venue.
@@ -13,7 +15,7 @@ import jakarta.transaction.Transactional;
 public class CreateVenueUseCaseImpl implements CreateVenueUseCase {
 
     private final VenueRepositoryPort venueRepository;
-
+    private static final Logger log = LoggerFactory.getLogger(CreateVenueUseCaseImpl.class);
     public CreateVenueUseCaseImpl(VenueRepositoryPort venueRepository) {
         this.venueRepository = venueRepository;
     }
@@ -21,11 +23,14 @@ public class CreateVenueUseCaseImpl implements CreateVenueUseCase {
     @Transactional
     @Override
     public Venue execute(Venue venue) {
+        log.info("VENUE_CREATE_START venueName={} location={}", venue.getName(), venue.getLocation());
+
         // REGLA 1: El nombre no puede estar vacío
         validateVenueName(venue.getName());
 
         // REGLA 2: No puede existir otro venue con el mismo nombre
         if (venueRepository.existsByNameIgnoreCase(venue.getName())) {
+            log.error("VENUE_CREATE_FAILED venueName={} reason=DuplicateName", venue.getName());
             throw new IllegalArgumentException(
                     "Ya existe un venue con el nombre: " + venue.getName()
             );
@@ -36,11 +41,18 @@ public class CreateVenueUseCaseImpl implements CreateVenueUseCase {
 
         // REGLA 4: La capacidad debe ser positiva
         if (venue.getCapacity() != null && venue.getCapacity() <= 0) {
+            log.error("VENUE_CREATE_FAILED venueName={} capacity={} reason=InvalidCapacity",
+                    venue.getName(), venue.getCapacity());
             throw new IllegalArgumentException("La capacidad debe ser mayor a 0");
         }
 
         // Si todo está bien, guardar el venue
-        return venueRepository.save(venue);
+        Venue saved = venueRepository.save(venue);
+
+        log.info("VENUE_CREATE_SUCCESS venueId={} venueName={} location={}",
+                saved.getId(), saved.getName(), saved.getLocation());
+
+        return saved;
     }
 
     // ========== MÉTODOS PRIVADOS DE VALIDACIÓN ==========

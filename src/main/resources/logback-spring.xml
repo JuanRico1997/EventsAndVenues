@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Configuración para logs en consola con formato JSON -->
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Campos personalizados -->
+            <customFields>{"application":"EventsAndVenues"}</customFields>
+
+            <!-- Incluir stack traces -->
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                <maxLength>2048</maxLength>
+                <shortenedClassNameLength>20</shortenedClassNameLength>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <!-- Configuración para logs en consola con formato legible (desarrollo) -->
+    <appender name="CONSOLE_READABLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Profile: default (desarrollo) - logs legibles -->
+    <springProfile name="default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_READABLE"/>
+        </root>
+
+        <!-- Nivel DEBUG para nuestro paquete -->
+        <logger name="com.riwi.EventAndVenue" level="DEBUG"/>
+
+        <!-- Nivel INFO para Hibernate SQL -->
+        <logger name="org.hibernate.SQL" level="INFO"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="INFO"/>
+    </springProfile>
+
+    <!-- Profile: prod (producción) - logs JSON -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </root>
+
+        <!-- Nivel INFO para nuestro paquete en producción -->
+        <logger name="com.riwi.EventAndVenue" level="INFO"/>
+
+        <!-- Reducir logs de frameworks en producción -->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+    </springProfile>
+
+    <!-- Logger específico para seguridad (cuando implementemos JWT) -->
+    <logger name="com.riwi.EventAndVenue.infrastructure_hexagonal.security" level="DEBUG"/>
+
+</configuration>
