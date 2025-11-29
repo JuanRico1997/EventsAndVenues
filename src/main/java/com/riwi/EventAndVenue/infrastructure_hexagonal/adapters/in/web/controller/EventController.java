@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,6 +69,7 @@ public class EventController {
      * Crear un nuevo evento.
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<EventResponse> createEvent(
             @Validated(OnCreate.class) @RequestBody EventRequest request) {
 
@@ -88,6 +90,7 @@ public class EventController {
      * Actualizar un evento existente.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id,
                                                      @Validated(OnUpdate.class) @RequestBody EventRequest request) {
 
@@ -109,6 +112,7 @@ public class EventController {
      * Eliminar un evento.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
 
         log.info("HTTP_REQUEST method=DELETE path=/api/events/{} eventId={}", id, id);

@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,6 +66,7 @@ public class VenueController {
      * Crear un nuevo venue.
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueResponse> createVenue(
             @Validated(OnCreate.class) @RequestBody VenueRequest request) {
 
@@ -85,6 +87,7 @@ public class VenueController {
      * Actualizar un venue existente.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueResponse> updateVenue(@PathVariable Long id,
                                                      @Validated(OnUpdate.class) @RequestBody VenueRequest request) {
 
@@ -106,6 +109,7 @@ public class VenueController {
      * Eliminar un venue.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
 
         log.info("HTTP_REQUEST method=DELETE path=/api/venues/{} venueId={}", id, id);

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -146,6 +147,31 @@ public class GlobalExceptionHandler {
                 traceId, request.getRequestURI(), ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Maneja errores de autorización (403 Forbidden).
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDenied(
+            AuthorizationDeniedException ex,
+            HttpServletRequest request) {
+
+        String traceId = generateTraceId();
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .type("about:blank")
+                .title("Access Denied")
+                .status(HttpStatus.FORBIDDEN.value())
+                .detail("No tienes permisos suficientes para realizar esta operación")
+                .instance(request.getRequestURI())
+                .traceId(traceId)
+                .build();
+
+        log.warn("ACCESS_DENIED traceId={} path={} message={}",
+                traceId, request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     /**
