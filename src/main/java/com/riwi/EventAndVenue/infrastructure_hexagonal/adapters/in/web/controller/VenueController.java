@@ -10,9 +10,16 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filte
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.VenueRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.VenueResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.VenueRestMapper;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +35,7 @@ import java.util.List;
 @RequestMapping("/api/venues")
 public class VenueController {
 
+    private static final Logger log = LoggerFactory.getLogger(VenueController.class);
     private final CreateVenueUseCase createVenueUseCase;
     private final UpdateVenueUseCase updateVenueUseCase;
     private final DeleteVenueUseCase deleteVenueUseCase;
@@ -58,15 +66,18 @@ public class VenueController {
      * Crear un nuevo venue.
      */
     @PostMapping
-    public ResponseEntity<VenueResponse> createVenue(@Valid @RequestBody VenueRequest request) {
-        // Convertir DTO a dominio
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<VenueResponse> createVenue(
+            @Validated(OnCreate.class) @RequestBody VenueRequest request) {
+
+        log.info("HTTP_REQUEST method=POST path=/api/venues venueName={}", request.getName());
+
         Venue venue = mapper.toDomain(request);
+        Venue created = createVenueUseCase.execute(venue);
+        VenueResponse response = mapper.toResponse(created);
 
-        // Ejecutar caso de uso
-        Venue createdVenue = createVenueUseCase.execute(venue);
-
-        // Convertir dominio a DTO de respuesta
-        VenueResponse response = mapper.toResponse(createdVenue);
+        log.info("HTTP_RESPONSE method=POST path=/api/venues status=201 venueId={} venueName={}",
+                response.getId(), response.getName());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -76,16 +87,19 @@ public class VenueController {
      * Actualizar un venue existente.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VenueResponse> updateVenue(@PathVariable Long id,
-                                                     @Valid @RequestBody VenueRequest request) {
-        // Convertir DTO a dominio
+                                                     @Validated(OnUpdate.class) @RequestBody VenueRequest request) {
+
+        log.info("HTTP_REQUEST method=PUT path=/api/venues/{} venueId={} venueName={}",
+                id, id, request.getName());
+
         Venue venue = mapper.toDomain(request);
+        Venue updated = updateVenueUseCase.execute(id, venue);
+        VenueResponse response = mapper.toResponse(updated);
 
-        // Ejecutar caso de uso
-        Venue updatedVenue = updateVenueUseCase.execute(id, venue);
-
-        // Convertir dominio a DTO de respuesta
-        VenueResponse response = mapper.toResponse(updatedVenue);
+        log.info("HTTP_RESPONSE method=PUT path=/api/venues/{} status=200 venueId={} venueName={}",
+                id, response.getId(), response.getName());
 
         return ResponseEntity.ok(response);
     }
@@ -95,8 +109,15 @@ public class VenueController {
      * Eliminar un venue.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
+
+        log.info("HTTP_REQUEST method=DELETE path=/api/venues/{} venueId={}", id, id);
+
         deleteVenueUseCase.execute(id);
+
+        log.info("HTTP_RESPONSE method=DELETE path=/api/venues/{} status=204 venueId={}", id, id);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -106,9 +127,17 @@ public class VenueController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<VenueResponse> getVenueById(@PathVariable Long id) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/venues/{} venueId={}", id, id);
+
         Venue venue = venueQueryService.findById(id)
-                .orElseThrow(() -> new RuntimeException("Venue no encontrado con ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Venue not found with id: " + id));
+
         VenueResponse response = mapper.toResponse(venue);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/venues/{} status=200 venueId={} venueName={}",
+                id, response.getId(), response.getName());
+
         return ResponseEntity.ok(response);
     }
 
@@ -118,8 +147,14 @@ public class VenueController {
      */
     @GetMapping
     public ResponseEntity<List<VenueResponse>> getAllVenues() {
+
+        log.info("HTTP_REQUEST method=GET path=/api/venues");
+
         List<Venue> venues = venueQueryService.findAll();
         List<VenueResponse> responses = mapper.toResponseList(venues);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/venues status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -129,8 +164,14 @@ public class VenueController {
      */
     @GetMapping("/active")
     public ResponseEntity<List<VenueResponse>> getActiveVenues() {
+
+        log.info("HTTP_REQUEST method=GET path=/api/venues/active");
+
         List<Venue> venues = venueQueryService.findActiveVenues();
         List<VenueResponse> responses = mapper.toResponseList(venues);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/venues/active status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -140,8 +181,14 @@ public class VenueController {
      */
     @GetMapping("/location/{location}")
     public ResponseEntity<List<VenueResponse>> getVenuesByLocation(@PathVariable String location) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/venues/location/{} location={}", location, location);
+
         List<Venue> venues = venueQueryService.findByLocation(location);
         List<VenueResponse> responses = mapper.toResponseList(venues);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/venues/location/{} status=200 count={}", location, responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -152,8 +199,14 @@ public class VenueController {
     @GetMapping("/capacity")
     public ResponseEntity<List<VenueResponse>> getVenuesByMinimumCapacity(
             @RequestParam Integer minCapacity) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/venues/capacity minCapacity={}", minCapacity);
+
         List<Venue> venues = venueQueryService.findByMinimumCapacity(minCapacity);
         List<VenueResponse> responses = mapper.toResponseList(venues);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/venues/capacity status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -163,7 +216,10 @@ public class VenueController {
      */
     @PostMapping("/filter")
     public ResponseEntity<List<VenueResponse>> filterVenues(@RequestBody VenueFilter filter) {
-        // Usar el caso de uso (arquitectura hexagonal correcta)
+
+        log.info("HTTP_REQUEST method=POST path=/api/venues/filter location={} active={} name={}",
+                filter.getLocation(), filter.getActive(), filter.getName());
+
         List<Venue> venues = searchVenuesUseCase.execute(
                 filter.getLocation(),
                 filter.getMinCapacity(),
@@ -173,8 +229,9 @@ public class VenueController {
                 filter.getHasEvents()
         );
 
-        // Convertir a DTOs de respuesta
         List<VenueResponse> responses = mapper.toResponseList(venues);
+
+        log.info("HTTP_RESPONSE method=POST path=/api/venues/filter status=200 count={}", responses.size());
 
         return ResponseEntity.ok(responses);
     }

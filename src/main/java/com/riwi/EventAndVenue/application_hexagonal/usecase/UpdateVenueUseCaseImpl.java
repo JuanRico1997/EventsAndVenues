@@ -4,6 +4,8 @@ import com.riwi.EventAndVenue.domain_hexagonal.model.Venue;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.in.UpdateVenueUseCase;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementación del caso de uso: Actualizar Venue.
@@ -13,7 +15,7 @@ import jakarta.transaction.Transactional;
 public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
 
     private final VenueRepositoryPort venueRepository;
-
+    private static final Logger log = LoggerFactory.getLogger(UpdateVenueUseCaseImpl.class);
     public UpdateVenueUseCaseImpl(VenueRepositoryPort venueRepository) {
         this.venueRepository = venueRepository;
     }
@@ -21,11 +23,14 @@ public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
     @Transactional
     @Override
     public Venue execute(Long id, Venue venueData) {
+        log.info("VENUE_UPDATE_START venueId={} venueName={}", id, venueData.getName());
+
         // REGLA 1: Verificar que el venue existe
         Venue existingVenue = venueRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Venue con ID " + id + " no encontrado"
-                ));
+                .orElseThrow(() -> {
+                    log.error("VENUE_UPDATE_FAILED venueId={} reason=VenueNotFound", id);
+                    return new IllegalArgumentException("Venue con ID " + id + " no encontrado");
+                });
 
         // REGLA 2: Actualizar nombre si se proporciona y validar
         if (venueData.getName() != null) {
@@ -34,6 +39,8 @@ public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
             // Verificar duplicados solo si el nombre cambió
             if (!venueData.getName().equalsIgnoreCase(existingVenue.getName())) {
                 if (venueRepository.existsByNameIgnoreCase(venueData.getName())) {
+                    log.error("VENUE_UPDATE_FAILED venueId={} venueName={} reason=DuplicateName",
+                            id, venueData.getName());
                     throw new IllegalArgumentException(
                             "Ya existe un venue con el nombre: " + venueData.getName()
                     );
@@ -52,6 +59,8 @@ public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
         // REGLA 4: Actualizar capacidad si se proporciona y validar
         if (venueData.getCapacity() != null) {
             if (venueData.getCapacity() <= 0) {
+                log.error("VENUE_UPDATE_FAILED venueId={} capacity={} reason=InvalidCapacity",
+                        id, venueData.getCapacity());
                 throw new IllegalArgumentException("La capacidad debe ser mayor a 0");
             }
             existingVenue.setCapacity(venueData.getCapacity());
@@ -68,7 +77,12 @@ public class UpdateVenueUseCaseImpl implements UpdateVenueUseCase {
         }
 
         // Guardar los cambios
-        return venueRepository.save(existingVenue);
+        Venue updated = venueRepository.save(existingVenue);
+
+        log.info("VENUE_UPDATE_SUCCESS venueId={} venueName={} location={}",
+                updated.getId(), updated.getName(), updated.getLocation());
+
+        return updated;
     }
 
     // ========== MÉTODOS PRIVADOS DE VALIDACIÓN ==========

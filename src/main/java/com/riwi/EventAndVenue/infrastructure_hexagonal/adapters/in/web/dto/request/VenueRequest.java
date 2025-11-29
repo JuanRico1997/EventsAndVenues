@@ -1,27 +1,26 @@
 package com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request;
 
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
 import jakarta.validation.constraints.*;
 
 /**
- * DTO para recibir datos de Venue desde el cliente.
- *
- * Contiene validaciones para asegurar que los datos sean correctos.
- * Se usa en los endpoints POST y PUT.
+ * DTO de entrada para Venue con validaciones avanzadas y grupos.
  */
 public class VenueRequest {
 
-    @NotBlank(message = "El nombre del venue es obligatorio")
-    @Size(max = 100, message = "El nombre no puede exceder 100 caracteres")
+    @NotBlank(message = "{venue.name.required}", groups = {OnCreate.class})
+    @Size(min = 3, max = 100, message = "{venue.name.size}", groups = {OnCreate.class, OnUpdate.class})
     private String name;
 
-    @NotBlank(message = "La ubicación es obligatoria")
-    @Size(max = 200, message = "La ubicación no puede exceder 200 caracteres")
+    @NotBlank(message = "{venue.location.required}", groups = {OnCreate.class})
+    @Size(min = 5, max = 200, message = "{venue.location.size}", groups = {OnCreate.class, OnUpdate.class})
     private String location;
 
-    @Min(value = 1, message = "La capacidad debe ser al menos 1")
+    @Positive(message = "{venue.capacity.positive}", groups = {OnCreate.class, OnUpdate.class})
     private Integer capacity;
 
-    @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
+    @Size(max = 500, message = "{venue.description.size}", groups = {OnCreate.class, OnUpdate.class})
     private String description;
 
     private Boolean active;
@@ -31,8 +30,7 @@ public class VenueRequest {
     }
 
     // Constructor completo
-    public VenueRequest(String name, String location, Integer capacity,
-                        String description, Boolean active) {
+    public VenueRequest(String name, String location, Integer capacity, String description, Boolean active) {
         this.name = name;
         this.location = location;
         this.capacity = capacity;
@@ -40,8 +38,7 @@ public class VenueRequest {
         this.active = active;
     }
 
-    // GETTERS Y SETTERS
-
+    // Getters y Setters
     public String getName() {
         return name;
     }

@@ -10,10 +10,17 @@ import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.filte
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.request.EventRequest;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.dto.response.EventResponse;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.mapper.EventRestMapper;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnCreate;
+import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.in.web.validation.groups.OnUpdate;
 import com.riwi.EventAndVenue.infrastructure_hexagonal.adapters.out.persistence.adapter.EventJpaAdapter;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +37,7 @@ import java.util.List;
 @RequestMapping("/api/events")
 public class EventController {
 
+    private static final Logger log = LoggerFactory.getLogger(EventController.class);
     private final CreateEventUseCase createEventUseCase;
     private final UpdateEventUseCase updateEventUseCase;
     private final DeleteEventUseCase deleteEventUseCase;
@@ -61,15 +69,18 @@ public class EventController {
      * Crear un nuevo evento.
      */
     @PostMapping
-    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventRequest request) {
-        // Convertir DTO a dominio
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    public ResponseEntity<EventResponse> createEvent(
+            @Validated(OnCreate.class) @RequestBody EventRequest request) {
+
+        log.info("HTTP_REQUEST method=POST path=/api/events eventName={}", request.getName());
+
         Event event = mapper.toDomain(request);
+        Event created = createEventUseCase.execute(event);
+        EventResponse response = mapper.toResponse(created);
 
-        // Ejecutar caso de uso
-        Event createdEvent = createEventUseCase.execute(event);
-
-        // Convertir dominio a DTO de respuesta
-        EventResponse response = mapper.toResponse(createdEvent);
+        log.info("HTTP_RESPONSE method=POST path=/api/events status=201 eventId={} eventName={}",
+                response.getId(), response.getName());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -79,16 +90,19 @@ public class EventController {
      * Actualizar un evento existente.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id,
-                                                     @Valid @RequestBody EventRequest request) {
-        // Convertir DTO a dominio
+                                                     @Validated(OnUpdate.class) @RequestBody EventRequest request) {
+
+        log.info("HTTP_REQUEST method=PUT path=/api/events/{} eventId={} eventName={}",
+                id, id, request.getName());
+
         Event event = mapper.toDomain(request);
+        Event updated = updateEventUseCase.execute(id, event);
+        EventResponse response = mapper.toResponse(updated);
 
-        // Ejecutar caso de uso
-        Event updatedEvent = updateEventUseCase.execute(id, event);
-
-        // Convertir dominio a DTO de respuesta
-        EventResponse response = mapper.toResponse(updatedEvent);
+        log.info("HTTP_RESPONSE method=PUT path=/api/events/{} status=200 eventId={} eventName={}",
+                id, response.getId(), response.getName());
 
         return ResponseEntity.ok(response);
     }
@@ -98,8 +112,15 @@ public class EventController {
      * Eliminar un evento.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+
+        log.info("HTTP_REQUEST method=DELETE path=/api/events/{} eventId={}", id, id);
+
         deleteEventUseCase.execute(id);
+
+        log.info("HTTP_RESPONSE method=DELETE path=/api/events/{} status=204 eventId={}", id, id);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -110,9 +131,17 @@ public class EventController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EventResponse> getEventById(@PathVariable Long id) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/{} eventId={}", id, id);
+
         Event event = eventQueryService.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado con ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Event not found with id: " + id));
+
         EventResponse response = mapper.toResponse(event);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/{} status=200 eventId={} eventName={}",
+                id, response.getId(), response.getName());
+
         return ResponseEntity.ok(response);
     }
 
@@ -122,8 +151,14 @@ public class EventController {
      */
     @GetMapping
     public ResponseEntity<List<EventResponse>> getAllEvents() {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events");
+
         List<Event> events = eventQueryService.findAll();
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -133,8 +168,14 @@ public class EventController {
      */
     @GetMapping("/venue/{venueId}")
     public ResponseEntity<List<EventResponse>> getEventsByVenue(@PathVariable Long venueId) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/venue/{} venueId={}", venueId, venueId);
+
         List<Event> events = eventQueryService.findByVenueId(venueId);
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/venue/{} status=200 count={}", venueId, responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -144,8 +185,14 @@ public class EventController {
      */
     @GetMapping("/active")
     public ResponseEntity<List<EventResponse>> getActiveEvents() {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/active");
+
         List<Event> events = eventQueryService.findActiveEvents();
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/active status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -155,8 +202,14 @@ public class EventController {
      */
     @GetMapping("/upcoming")
     public ResponseEntity<List<EventResponse>> getUpcomingEvents() {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/upcoming");
+
         List<Event> events = eventQueryService.findUpcomingEvents();
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/upcoming status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -168,8 +221,14 @@ public class EventController {
     public ResponseEntity<List<EventResponse>> getEventsByDateRange(
             @RequestParam LocalDateTime startDate,
             @RequestParam LocalDateTime endDate) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/search startDate={} endDate={}", startDate, endDate);
+
         List<Event> events = eventQueryService.findByDateRange(startDate, endDate);
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/search status=200 count={}", responses.size());
+
         return ResponseEntity.ok(responses);
     }
 
@@ -177,9 +236,16 @@ public class EventController {
      * GET /api/events/venue/{venueId}/count
      * Contar eventos de un venue.
      */
+
     @GetMapping("/venue/{venueId}/count")
     public ResponseEntity<Long> countEventsByVenue(@PathVariable Long venueId) {
+
+        log.info("HTTP_REQUEST method=GET path=/api/events/venue/{}/count venueId={}", venueId, venueId);
+
         long count = eventQueryService.countByVenueId(venueId);
+
+        log.info("HTTP_RESPONSE method=GET path=/api/events/venue/{}/count status=200 count={}", venueId, count);
+
         return ResponseEntity.ok(count);
     }
 
@@ -192,7 +258,9 @@ public class EventController {
     @PostMapping("/filter")
     public ResponseEntity<List<EventResponse>> filterEvents(@RequestBody EventFilter filter) {
 
-        // Llamar al método de búsqueda filtrada
+        log.info("HTTP_REQUEST method=POST path=/api/events/filter venueId={} active={} name={}",
+                filter.getVenueId(), filter.getActive(), filter.getName());
+
         List<Event> events = searchEventsUseCase.execute(
                 filter.getVenueId(),
                 filter.getActive(),
@@ -203,8 +271,9 @@ public class EventController {
                 filter.getMaxPrice()
         );
 
-        // Convertir a DTOs de respuesta
         List<EventResponse> responses = mapper.toResponseList(events);
+
+        log.info("HTTP_RESPONSE method=POST path=/api/events/filter status=200 count={}", responses.size());
 
         return ResponseEntity.ok(responses);
     }
