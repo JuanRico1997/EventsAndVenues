@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Servicio de MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: eventsandvenues-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: eventsandvenues_db
+      MYSQL_USER: eventsuser
+      MYSQL_PASSWORD: eventspassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio de la aplicación Spring Boot
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eventsandvenues-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/eventsandvenues_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: eventsuser
+      SPRING_DATASOURCE_PASSWORD: eventspassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: true
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge

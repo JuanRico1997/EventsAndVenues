@@ -12,6 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.micrometer.core.instrument.Counter;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * Controlador REST para autenticación.
@@ -26,11 +31,20 @@ public class AuthController {
 
     private final RegisterUserUseCase registerUserUseCase;
     private final LoginUserUseCase loginUserUseCase;
+    private final Counter usersRegisteredCounter;
+    private final Counter loginSuccessCounter;
+    private final Counter loginFailureCounter;
 
     public AuthController(RegisterUserUseCase registerUserUseCase,
-                          LoginUserUseCase loginUserUseCase) {
+                          LoginUserUseCase loginUserUseCase,
+                          @Qualifier("usersRegisteredCounter") Counter usersRegisteredCounter,
+                          @Qualifier("loginSuccessCounter") Counter loginSuccessCounter,
+                          @Qualifier("loginFailureCounter") Counter loginFailureCounter) {
         this.registerUserUseCase = registerUserUseCase;
         this.loginUserUseCase = loginUserUseCase;
+        this.usersRegisteredCounter = usersRegisteredCounter;
+        this.loginSuccessCounter = loginSuccessCounter;
+        this.loginFailureCounter = loginFailureCounter;
     }
 
     /**
@@ -62,6 +76,9 @@ public class AuthController {
                 registeredUser.getRoles()
         );
 
+        // Incrementar contador de usuarios registrados
+        usersRegisteredCounter.increment();
+
         log.info("HTTP_RESPONSE method=POST path=/auth/register status=201 userId={} username={}",
                 response.getUserId(), response.getUsername());
 
@@ -80,17 +97,29 @@ public class AuthController {
         log.info("HTTP_REQUEST method=POST path=/auth/login usernameOrEmail={}",
                 request.getUsernameOrEmail());
 
-        // Ejecutar caso de uso (retorna token JWT)
-        String token = loginUserUseCase.execute(request.getUsernameOrEmail(), request.getPassword());
+        try {
+            // Ejecutar caso de uso (retorna token JWT)
+            String token = loginUserUseCase.execute(request.getUsernameOrEmail(), request.getPassword());
 
-        // Crear respuesta (por ahora sin userId, username, email - solo token)
-        // En producción, podrías extraer esta info del token o retornarla del caso de uso
-        AuthResponse response = new AuthResponse();
-        response.setToken(token);
-        response.setTokenType("Bearer");
+            // Crear respuesta (por ahora sin userId, username, email - solo token)
+            // En producción, podrías extraer esta info del token o retornarla del caso de uso
+            AuthResponse response = new AuthResponse();
+            response.setToken(token);
+            response.setTokenType("Bearer");
 
-        log.info("HTTP_RESPONSE method=POST path=/auth/login status=200 tokenGenerated=true");
+            // Incrementar contador de login exitoso
+            loginSuccessCounter.increment();
 
-        return ResponseEntity.ok(response);
+            log.info("HTTP_RESPONSE method=POST path=/auth/login status=200 tokenGenerated=true");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // Incrementar contador de login fallido
+            loginFailureCounter.increment();
+
+            log.error("HTTP_RESPONSE method=POST path=/auth/login status=401 reason=AuthenticationFailed");
+            throw e;
+        }
     }
 }

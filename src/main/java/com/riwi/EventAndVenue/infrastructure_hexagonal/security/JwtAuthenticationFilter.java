@@ -15,7 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,10 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // Extraer username y roles del token
                 String username = tokenProvider.getUsernameFromToken(jwt);
-                String rolesStr = tokenProvider.getRolesFromToken(jwt);
+                List<String> roles = tokenProvider.getRolesFromToken(jwt);
 
-                // Convertir roles de String a List<SimpleGrantedAuthority>
-                List<SimpleGrantedAuthority> authorities = Arrays.stream(rolesStr.split(","))
+                // Convertir roles de List<String> a List<SimpleGrantedAuthority>
+                List<SimpleGrantedAuthority> authorities = roles.stream()
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
@@ -71,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Establecer autenticación en SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("JWT_AUTH_SUCCESS username={} roles={}", username, rolesStr);
+                log.info("JWT_AUTH_SUCCESS username={} roles={} authorities={}", username, roles, authorities);
             }
 
         } catch (Exception ex) {

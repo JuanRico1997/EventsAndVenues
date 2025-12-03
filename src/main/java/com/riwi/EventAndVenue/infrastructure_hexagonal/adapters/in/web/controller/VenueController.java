@@ -66,7 +66,7 @@ public class VenueController {
      * Crear un nuevo venue.
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<VenueResponse> createVenue(
             @Validated(OnCreate.class) @RequestBody VenueRequest request) {
 
@@ -87,7 +87,7 @@ public class VenueController {
      * Actualizar un venue existente.
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<VenueResponse> updateVenue(@PathVariable Long id,
                                                      @Validated(OnUpdate.class) @RequestBody VenueRequest request) {
 
@@ -109,7 +109,7 @@ public class VenueController {
      * Eliminar un venue.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<Void> deleteVenue(@PathVariable Long id) {
 
         log.info("HTTP_REQUEST method=DELETE path=/api/venues/{} venueId={}", id, id);

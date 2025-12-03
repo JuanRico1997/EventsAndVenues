@@ -8,6 +8,9 @@ import com.riwi.EventAndVenue.domain_hexagonal.ports.out.EventRepositoryPort;
 import com.riwi.EventAndVenue.domain_hexagonal.ports.out.VenueRepositoryPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Configuración de Spring para la aplicación hexagonal.
@@ -33,17 +36,21 @@ public class ApplicationConfig {
      * Spring inyecta automáticamente los repositorios necesarios.
      */
     @Bean
-    public CreateEventUseCase createEventUseCase(EventRepositoryPort eventRepository,
-                                                 VenueRepositoryPort venueRepository) {
-        return new CreateEventUseCaseImpl(eventRepository, venueRepository);
+    public CreateEventUseCase createEventUseCase(
+            EventRepositoryPort eventRepository,
+            VenueRepositoryPort venueRepository,
+            @Qualifier("eventsCreatedCounter") Counter eventsCreatedCounter,
+            @Qualifier("eventCreationTimer") Timer eventCreationTimer) {
+        return new CreateEventUseCaseImpl(eventRepository, venueRepository, eventsCreatedCounter, eventCreationTimer);
     }
 
     /**
      * Bean para actualizar eventos.
      */
     @Bean
-    public UpdateEventUseCase updateEventUseCase(EventRepositoryPort eventRepository,
-                                                 VenueRepositoryPort venueRepository) {
+    public UpdateEventUseCase updateEventUseCase(
+            EventRepositoryPort eventRepository,
+            VenueRepositoryPort venueRepository) {
         return new UpdateEventUseCaseImpl(eventRepository, venueRepository);
     }
 
@@ -51,8 +58,10 @@ public class ApplicationConfig {
      * Bean para eliminar eventos.
      */
     @Bean
-    public DeleteEventUseCase deleteEventUseCase(EventRepositoryPort eventRepository) {
-        return new DeleteEventUseCaseImpl(eventRepository);
+    public DeleteEventUseCase deleteEventUseCase(
+            EventRepositoryPort eventRepository,
+            @Qualifier("eventsDeletedCounter") Counter eventsDeletedCounter) {
+        return new DeleteEventUseCaseImpl(eventRepository, eventsDeletedCounter);
     }
 
     /**
@@ -71,8 +80,11 @@ public class ApplicationConfig {
      * Bean para crear venues.
      */
     @Bean
-    public CreateVenueUseCase createVenueUseCase(VenueRepositoryPort venueRepository) {
-        return new CreateVenueUseCaseImpl(venueRepository);
+    public CreateVenueUseCase createVenueUseCase(
+            VenueRepositoryPort venueRepository,
+            @Qualifier("venuesCreatedCounter") Counter venuesCreatedCounter,
+            @Qualifier("venueCreationTimer") Timer venueCreationTimer) {
+        return new CreateVenueUseCaseImpl(venueRepository, venuesCreatedCounter, venueCreationTimer);
     }
 
     /**
@@ -87,9 +99,11 @@ public class ApplicationConfig {
      * Bean para eliminar venues.
      */
     @Bean
-    public DeleteVenueUseCase deleteVenueUseCase(VenueRepositoryPort venueRepository,
-                                                 EventRepositoryPort eventRepository) {
-        return new DeleteVenueUseCaseImpl(venueRepository, eventRepository);
+    public DeleteVenueUseCase deleteVenueUseCase(
+            VenueRepositoryPort venueRepository,
+            EventRepositoryPort eventRepository,
+            @Qualifier("venuesDeletedCounter") Counter venuesDeletedCounter) {
+        return new DeleteVenueUseCaseImpl(venueRepository,eventRepository, venuesDeletedCounter);
     }
 
     /**
