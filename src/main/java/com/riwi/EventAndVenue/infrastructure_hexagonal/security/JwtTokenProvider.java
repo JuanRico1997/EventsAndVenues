@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -44,22 +45,21 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
-        // Extraer roles del usuario
-        String roles = authentication.getAuthorities().stream()
+        // Extraer roles del usuario como lista
+        List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+                .collect(Collectors.toList());
 
         log.debug("JWT_GENERATE username={} roles={}", username, roles);
 
         return Jwts.builder()
                 .subject(username)
-                .claim("roles", roles)
+                .claim("roles", roles)  // Ahora es una lista, no String
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
                 .compact();
     }
-
     /**
      * Extrae el username del token JWT.
      *
@@ -80,16 +80,17 @@ public class JwtTokenProvider {
      * Extrae los roles del token JWT.
      *
      * @param token Token JWT
-     * @return Roles como String separados por coma
+     * @return Lista de roles
      */
-    public String getRolesFromToken(String token) {
+    @SuppressWarnings("unchecked")
+    public List<String> getRolesFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
 
-        return claims.get("roles", String.class);
+        return claims.get("roles", List.class);
     }
 
     /**

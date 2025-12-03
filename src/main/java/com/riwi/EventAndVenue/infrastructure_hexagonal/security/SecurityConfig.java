@@ -70,12 +70,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/venues/**").permitAll()
 
                         // Endpoints de escritura (POST, PUT, DELETE) - requieren autenticación
-                        .requestMatchers(HttpMethod.POST, "/api/events/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/events/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/events/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/venues/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/venues/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/venues/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/events/**").hasAnyAuthority("ROLE_USER", "ROLE_ORGANIZER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyAuthority("ROLE_USER", "ROLE_ORGANIZER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/venues/**").hasAnyAuthority("ROLE_ORGANIZER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/venues/**").hasAnyAuthority("ROLE_ORGANIZER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/venues/**").hasAuthority("ROLE_ADMIN")
 
                         // Cualquier otra petición requiere autenticación
                         .anyRequest().authenticated()
