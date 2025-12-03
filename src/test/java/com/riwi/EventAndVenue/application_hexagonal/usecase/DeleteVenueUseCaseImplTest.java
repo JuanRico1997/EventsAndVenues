@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import io.micrometer.core.instrument.Counter;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -21,6 +21,9 @@ class DeleteVenueUseCaseImplTest {
 
     @Mock
     private VenueRepositoryPort venueRepositoryPort;
+
+    @Mock
+    private Counter venuesDeletedCounter;
 
     @InjectMocks
     private DeleteVenueUseCaseImpl deleteVenueUseCase;

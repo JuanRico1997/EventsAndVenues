@@ -9,7 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import java.util.function.Supplier;
+import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -24,6 +27,12 @@ class CreateVenueUseCaseImplTest {
     @Mock
     private VenueRepositoryPort venueRepositoryPort;
 
+    @Mock
+    private Counter venuesCreatedCounter;  // ← AGREGAR
+
+    @Mock
+    private Timer venueCreationTimer;
+
     @InjectMocks
     private CreateVenueUseCaseImpl createVenueUseCase;
 
@@ -37,6 +46,12 @@ class CreateVenueUseCaseImplTest {
         validVenue.setCapacity(3000);
         validVenue.setDescription("Teatro moderno");
         validVenue.setActive(true);
+
+        // Configurar el Timer mock para ejecutar el Supplier directamente
+        when(venueCreationTimer.record(any(Supplier.class))).thenAnswer(invocation -> {
+            Supplier<?> supplier = invocation.getArgument(0);
+            return supplier.get();
+        });
     }
 
     @Test

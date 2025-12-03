@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
+import java.util.function.Supplier;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +36,12 @@ class CreateEventUseCaseImplTest {
 
     @Mock
     private VenueRepositoryPort venueRepositoryPort;
+
+    @Mock
+    private Counter eventsCreatedCounter;  // ← AGREGAR
+
+    @Mock
+    private Timer eventCreationTimer;
 
     @InjectMocks
     private CreateEventUseCaseImpl createEventUseCase;
@@ -57,6 +67,12 @@ class CreateEventUseCaseImplTest {
         validEvent.setCapacity(1000);
         validEvent.setTicketPrice(50000.0);
         validEvent.setActive(true);
+
+        // Configurar el Timer mock para ejecutar el Supplier directamente
+        when(eventCreationTimer.record(any(Supplier.class))).thenAnswer(invocation -> {
+            Supplier<?> supplier = invocation.getArgument(0);
+            return supplier.get();
+        });
     }
 
     @Test
